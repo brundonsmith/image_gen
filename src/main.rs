@@ -5,13 +5,13 @@ use image::{ImageBuffer, Rgb};
 use image_gen::generators::diamond_square::{generate_diamond_square};
 use image_gen::image::{Image,float_to_u8};
 
-const RESOLUTION: usize = 129;
+const RESOLUTION: usize = 513;
 
 fn main() {
     
     println!("Generating...");
 
-    let image = generate_diamond_square(RESOLUTION, 0.5, 0.5);
+    let image = generate_diamond_square(RESOLUTION, 0.5, 0.7);
 
     println!("Writing to png...");
 
