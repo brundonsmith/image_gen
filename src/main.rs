@@ -1,17 +1,16 @@
 extern crate image;
 
 use image::{ImageBuffer, Rgb};
-
-use image_gen::generators::diamond_square::{generate_diamond_square};
 use image_gen::image::{Image,float_to_u8};
+use image_gen::generators::perlin_noise::{generate_perlin_noise};
 
-const RESOLUTION: usize = 513;
+const RESOLUTION: usize = 512;
 
 fn main() {
     
     println!("Generating...");
 
-    let image = generate_diamond_square(RESOLUTION, 0.5, 0.7);
+    let image = generate_perlin_noise(RESOLUTION, 17);
 
     println!("Writing to png...");
 

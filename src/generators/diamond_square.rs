@@ -99,7 +99,7 @@ fn random_offset(range: f32) -> f32 {
 
 fn average<'a, I: Clone+Iterator<Item=&'a f32>>(nums: I) -> f32 {
     let count = nums.clone().count() as f32;
-    return nums.fold(0.0, |total, num| total + num) / count;
+    return nums.fold(0.0, |total, &num| total + num) / count;
 }
 
 struct Partition {
