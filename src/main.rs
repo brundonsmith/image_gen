@@ -10,7 +10,11 @@ fn main() {
     
     println!("Generating...");
 
+    let start = std::time::SystemTime::now();
     let image = generate_perlin_noise(RESOLUTION, 17);
+    let end = std::time::SystemTime::now();
+    let total = end.duration_since(start).unwrap();
+    println!("Took {}s", total.as_millis() as f32 / 1000.0);
 
     println!("Writing to png...");
 

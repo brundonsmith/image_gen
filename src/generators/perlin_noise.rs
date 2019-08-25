@@ -1,10 +1,15 @@
 
+use std::f32::consts::PI;
+use std::sync::{Arc, Mutex};
+
 extern crate rand;
 use rand::Rng;
-use std::f32::consts::PI;
+
+extern crate crossbeam;
 
 use crate::image::{GrayscaleColor, Image};
 use crate::generators::utils::vec::{Vector,VectorMath};
+
 /**
  * Creates a new Image and runs apply_perlin_noise on it. 
  */
@@ -15,36 +20,53 @@ pub fn generate_perlin_noise(size: usize, grid_size: usize) -> Image<GrayscaleCo
 }
 
 pub fn apply_perlin_noise(image: &mut Image<GrayscaleColor>, grid_size: usize) {
-    let start = std::time::SystemTime::now();
-    let mut focus_duration = std::time::Duration::new(0, 0);
+    crossbeam::scope(move |scope| {
+        let cell_size_x = image.width() / (grid_size - 1);
+        let cell_size_y = image.height() / (grid_size - 1);
 
-    let cell_size_x = image.width() / (grid_size - 1);
-    let cell_size_y = image.height() / (grid_size - 1);
+        // initialize grid
+        let mut grid: Vec<Vec<Vector>> = Vec::with_capacity(grid_size);
+        for i in 0..grid_size {
+            grid.push(Vec::with_capacity(grid_size));
 
-    // initialize grid
-    let mut grid: Vec<Vec<Vector>> = Vec::with_capacity(grid_size);
-    for i in 0..grid_size {
-        grid.push(Vec::with_capacity(grid_size));
-
-        for _ in 0..grid_size {
-            grid[i].push(generate_random_vector(2));
+            for _ in 0..grid_size {
+                grid[i].push(generate_random_vector(2));
+            }
         }
-    }
 
-    for x in 0..image.width() {
-        for y in 0..image.height() {
-            let x_cell = x / cell_size_x;
-            let y_cell = y / cell_size_y;
-            let pixel_vec = vec![x as f32, y as f32];
+        let arc_grid = Arc::new(grid);
+        let mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>> = Arc::new(Mutex::new(image));
 
-            let corner_nodes = [
-                (x_cell, y_cell),
-                (x_cell + 1, y_cell),
-                (x_cell, y_cell + 1),
-                (x_cell + 1, y_cell + 1),
+        for cell_x in 0..(grid_size - 1) {
+            for cell_y in 0..(grid_size - 1) {
+                let arc_grid_clone = Arc::clone(&arc_grid);
+                let mutex_image_clone = Arc::clone(&mutex_image);
+
+                scope.spawn(move |_| {
+                    perlin_cell(mutex_image_clone, &arc_grid_clone, cell_size_x, cell_size_y, cell_x, cell_y);
+                });
+            }
+        }
+    }).unwrap();
+}
+
+fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<Vec<Vector>>, cell_size_x: usize, cell_size_y: usize, cell_x: usize, cell_y: usize) {
+    let mut buf = Vec::with_capacity(cell_size_x * cell_size_y);
+
+    for x in 0..cell_size_x {
+        for y in 0..cell_size_y {
+            let pixel_vec = vec![
+                (x + (cell_x * cell_size_x)) as f32, 
+                (y + (cell_y * cell_size_y)) as f32
             ];
 
-            let start_focus = std::time::SystemTime::now();
+            let corner_nodes = [
+                (cell_x, cell_y),
+                (cell_x + 1, cell_y),
+                (cell_x, cell_y + 1),
+                (cell_x + 1, cell_y + 1),
+            ];
+
             let dots: Vec<f32> = corner_nodes.iter().map(|corner| {
 
                 // get distance of pixel from corner
@@ -62,27 +84,23 @@ pub fn apply_perlin_noise(image: &mut Image<GrayscaleColor>, grid_size: usize) {
                 // compute the dot product and scale it to fit in 0..1
                 return distance.mul(corner_gradient_vec) / 2.0 + 0.5;
             }).collect();
-            let end_focus = std::time::SystemTime::now();
-            focus_duration += end_focus.duration_since(start_focus).unwrap();
 
+            let interpolation_1 = serp(dots[0], dots[1], x as f32 / cell_size_x as f32);
+            let interpolation_2 = serp(dots[2], dots[3], x as f32 / cell_size_x as f32);
+            let final_interpolation = serp(interpolation_1, interpolation_2, y as f32 / cell_size_y as f32);
 
-            let relative_x = (x - corner_nodes[0].0 * cell_size_x) as f32;
-            let relative_y = (y - corner_nodes[0].1 * cell_size_y) as f32;
-
-            let interpolation_1 = serp(dots[0], dots[1], relative_x / cell_size_x as f32);
-            let interpolation_2 = serp(dots[2], dots[3], relative_x / cell_size_x as f32);
-            let final_interpolation = serp(interpolation_1, interpolation_2, relative_y / cell_size_y as f32);
-
-            image.set(x as i64, y as i64, final_interpolation);
+            //let image = mutex_image.lock().unwrap();
+            buf.push(final_interpolation);
         }
     }
 
-    let end = std::time::SystemTime::now();
-    let total_duration = end.duration_since(start).unwrap();
+    let image: &mut Image<GrayscaleColor> = &mut mutex_image.lock().unwrap();
+    for i in 0..buf.len() {
+        let x = cell_x * cell_size_x + i / cell_size_y;
+        let y = cell_y * cell_size_y + i % cell_size_y;
 
-    let fraction = focus_duration.as_millis() as f32 / total_duration.as_millis() as f32;
-
-    println!("{}ms, {} of total time", focus_duration.as_millis(), fraction);
+        image.set(x as i64, y as i64, buf[i]);
+    }
 }
 
 fn generate_random_vector(_dimensions: usize) -> Vector {
