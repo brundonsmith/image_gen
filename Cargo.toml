@@ -10,3 +10,6 @@ edition = "2018"
 rand = "0.7.0"
 image = "0.21.2"
 crossbeam = "0.7.2"
+
+[profile.dev]
+opt-level = 3
