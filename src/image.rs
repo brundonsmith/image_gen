@@ -1,5 +1,5 @@
 
-use std::iter::FromIterator;
+use std::{iter::FromIterator, ops::{Add, Mul}};
 
 pub fn float_to_u8(f: f32) -> u8 {
     (f * 255.0) as u8
@@ -11,13 +11,13 @@ pub type FloatColor = (f32, f32, f32);
 
 pub type GrayscaleColor = f32;
 
-pub struct Image<P: Copy> {
+pub struct Image<P: Copy + Add<Output=P> + Mul<Output=P>> {
     width: usize,
     height: usize,
     pixels: Vec<P>
 }
 
-impl<P: Copy> Image<P> {
+impl<P: Copy + Add<Output=P> + Mul<Output=P>> Image<P> {
 
     pub fn new(width: usize, height: usize) -> Self {
         Image { 
@@ -51,6 +51,16 @@ impl<P: Copy> Image<P> {
     pub fn set(&mut self, x: i64, y: i64, c: P) {
         let index = self.pixel_index(x, y);
         self.pixels[index] = c;
+    }
+    
+    pub fn add(&mut self, x: i64, y: i64, c: P) {
+        let index = self.pixel_index(x, y);
+        self.pixels[index] = self.pixels[index] + c;
+    }
+
+    pub fn scale(&mut self, x: i64, y: i64, c: P) {
+        let index = self.pixel_index(x, y);
+        self.pixels[index] = self.pixels[index] * c;
     }
 
     fn pixel_index(&self, x: i64, y: i64) -> usize {

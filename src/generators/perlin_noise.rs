@@ -13,13 +13,13 @@ use crate::generators::utils::vec::{Vector,VectorMath};
 /**
  * Creates a new Image and runs apply_perlin_noise on it. 
  */
-pub fn generate_perlin_noise(size: usize, grid_size: usize) -> Image<GrayscaleColor> {
-    let mut image = Image::from_color(size, size, 0.5);
-    apply_perlin_noise(&mut image, grid_size);
+pub fn generate_perlin_noise(size: usize, grid_size: usize, midpoint: f32, scale: f32) -> Image<GrayscaleColor> {
+    let mut image = Image::from_color(size, size, midpoint);
+    add_perlin_noise(&mut image, grid_size, scale);
     return image;
 }
 
-pub fn apply_perlin_noise(image: &mut Image<GrayscaleColor>, grid_size: usize) {
+pub fn add_perlin_noise(image: &mut Image<GrayscaleColor>, grid_size: usize, scale: f32) {
     crossbeam::scope(move |scope| {
         let cell_size_x = image.width() / (grid_size - 1);
         let cell_size_y = image.height() / (grid_size - 1);
@@ -43,14 +43,14 @@ pub fn apply_perlin_noise(image: &mut Image<GrayscaleColor>, grid_size: usize) {
                 let mutex_image_clone = Arc::clone(&mutex_image);
 
                 scope.spawn(move |_| {
-                    perlin_cell(mutex_image_clone, &arc_grid_clone, cell_size_x, cell_size_y, cell_x, cell_y);
+                    perlin_cell(mutex_image_clone, &arc_grid_clone, scale, cell_size_x, cell_size_y, cell_x, cell_y);
                 });
             }
         }
     }).unwrap();
 }
 
-fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<Vec<Vector>>, cell_size_x: usize, cell_size_y: usize, cell_x: usize, cell_y: usize) {
+fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<Vec<Vector>>, scale: f32, cell_size_x: usize, cell_size_y: usize, cell_x: usize, cell_y: usize) {
     let mut buf = Vec::with_capacity(cell_size_x * cell_size_y);
 
     for x in 0..cell_size_x {
@@ -82,7 +82,7 @@ fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<V
                 let corner_gradient_vec = &grid[corner.0][corner.1];
 
                 // compute the dot product and scale it to fit in 0..1
-                return distance.mul(corner_gradient_vec) / 2.0 + 0.5;
+                return distance.mul(corner_gradient_vec) * scale;
             }).collect();
 
             let interpolation_1 = serp(dots[0], dots[1], x as f32 / cell_size_x as f32);
@@ -99,7 +99,7 @@ fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<V
         let x = cell_x * cell_size_x + i / cell_size_y;
         let y = cell_y * cell_size_y + i % cell_size_y;
 
-        image.set(x as i64, y as i64, buf[i]);
+        image.add(x as i64, y as i64, buf[i]);
     }
 }
 
