@@ -8,8 +8,7 @@ use rand::Rng;
 extern crate crossbeam;
 
 use crate::image::{GrayscaleColor, Image};
-
-use super::utils::vec2::Vec2;
+use crate::utils::vec2::Vec2;
 
 /**
  * Creates a new Image and runs apply_perlin_noise on it. 

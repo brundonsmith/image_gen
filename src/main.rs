@@ -2,8 +2,8 @@ extern crate image;
 
 use image::{ImageBuffer, Rgb};
 use image_gen::{generators::add_perlin_noise, image::{Image,float_to_u8}};
-use image_gen::generators::{utils::vec2::Vec2, generate_diamond_square, generate_bricks, generate_perlin_noise, HillShape, generate_hill};
 use image_gen::generators::{generate_diamond_square, generate_bricks, generate_perlin_noise, HillShape, generate_hill};
+use image_gen::utils::vec2::Vec2;
 
 const RESOLUTION: usize = 1024;
 

@@ -1,7 +1,6 @@
 
 use crate::image::{GrayscaleColor, Image};
-
-use super::utils::vec2::Vec2;
+use crate::utils::vec2::Vec2;
 
 pub fn generate_bricks(size: usize, bricks_x: usize, bricks_y: usize, bevel: Vec2, gap: Vec2) -> Image<GrayscaleColor> {
     let mut image = Image::from_color(size, size, 0.0);
