@@ -1,5 +1,5 @@
 
-mod utils;
+pub mod utils;
 mod bricks;
 mod diamond_square;
 mod perlin_noise;

@@ -1,22 +1,23 @@
 
 use crate::image::{GrayscaleColor, Image};
-use crate::generators::utils::vec::{Vector};
 
-pub fn generate_bricks(size: usize, bricks_x: usize, bricks_y: usize, bevel: Vector, gap: Vector) -> Image<GrayscaleColor> {
+use super::utils::vec2::Vec2;
+
+pub fn generate_bricks(size: usize, bricks_x: usize, bricks_y: usize, bevel: Vec2, gap: Vec2) -> Image<GrayscaleColor> {
     let mut image = Image::from_color(size, size, 0.0);
     apply_bricks(&mut image, bricks_x, bricks_y, bevel, gap);
     return image;
 }
 
-pub fn apply_bricks(image: &mut Image<GrayscaleColor>, bricks_x: usize, bricks_y: usize, bevel: Vector, gap: Vector) {
+pub fn apply_bricks(image: &mut Image<GrayscaleColor>, bricks_x: usize, bricks_y: usize, bevel: Vec2, gap: Vec2) {
     let brick_size_x = image.width() / bricks_x;
     let brick_size_y = image.height() / bricks_y;
 
     // create first brick
     for x in 0..brick_size_x {
         for y in 0..brick_size_y {
-            let x_bevel = get_bevel_height(x, brick_size_x, bevel[0]);
-            let y_bevel = get_bevel_height(y, brick_size_y, bevel[1]);
+            let x_bevel = get_bevel_height(x, brick_size_x, bevel.x);
+            let y_bevel = get_bevel_height(y, brick_size_y, bevel.y);
 
             image.set(x as i64, y as i64, x_bevel.min(y_bevel));
         }

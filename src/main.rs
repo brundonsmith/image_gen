@@ -2,6 +2,7 @@ extern crate image;
 
 use image::{ImageBuffer, Rgb};
 use image_gen::{generators::add_perlin_noise, image::{Image,float_to_u8}};
+use image_gen::generators::{utils::vec2::Vec2, generate_diamond_square, generate_bricks, generate_perlin_noise, HillShape, generate_hill};
 use image_gen::generators::{generate_diamond_square, generate_bricks, generate_perlin_noise, HillShape, generate_hill};
 
 const RESOLUTION: usize = 1024;
@@ -13,7 +14,7 @@ fn main() {
 
     // let image = generate_diamond_square(RESOLUTION, 1.0, 1.0);
     // let image = generate_perlin_noise(RESOLUTION, 13, 0.5, 0.5);
-    // let image = generate_bricks(RESOLUTION, 2, 8, vec![0.1, 0.4], vec![0.1, 0.1]);
+    // let image = generate_bricks(RESOLUTION, 2, 8, Vec2 { x: 0.1, y: 0.4 }, Vec2 { x: 0.1, y: 0.1 });
     // let image = generate_hill(RESOLUTION, (0.5, 0.5), HillShape::Smooth, 0.5, 1.0);
 
     let mut image =  generate_hill(RESOLUTION, (0.5, 0.5), HillShape::Smooth, 0.5, 1.0);

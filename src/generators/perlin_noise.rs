@@ -8,7 +8,8 @@ use rand::Rng;
 extern crate crossbeam;
 
 use crate::image::{GrayscaleColor, Image};
-use crate::generators::utils::vec::{Vector,VectorMath};
+
+use super::utils::vec2::Vec2;
 
 /**
  * Creates a new Image and runs apply_perlin_noise on it. 
@@ -25,7 +26,7 @@ pub fn add_perlin_noise(image: &mut Image<GrayscaleColor>, grid_size: usize, sca
         let cell_size_y = image.height() / (grid_size - 1);
 
         // initialize grid
-        let mut grid: Vec<Vec<Vector>> = Vec::with_capacity(grid_size);
+        let mut grid: Vec<Vec<Vec2>> = Vec::with_capacity(grid_size);
         for i in 0..grid_size {
             grid.push(Vec::with_capacity(grid_size));
 
@@ -50,15 +51,15 @@ pub fn add_perlin_noise(image: &mut Image<GrayscaleColor>, grid_size: usize, sca
     }).unwrap();
 }
 
-fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<Vec<Vector>>, scale: f32, cell_size_x: usize, cell_size_y: usize, cell_x: usize, cell_y: usize) {
+fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<Vec<Vec2>>, scale: f32, cell_size_x: usize, cell_size_y: usize, cell_x: usize, cell_y: usize) {
     let mut buf = Vec::with_capacity(cell_size_x * cell_size_y);
 
     for x in 0..cell_size_x {
         for y in 0..cell_size_y {
-            let pixel_vec = vec![
-                (x + (cell_x * cell_size_x)) as f32, 
-                (y + (cell_y * cell_size_y)) as f32
-            ];
+            let pixel_vec = Vec2 {
+                x: (x + (cell_x * cell_size_x)) as f32, 
+                y: (y + (cell_y * cell_size_y)) as f32
+            };
 
             let corner_nodes = [
                 (cell_x, cell_y),
@@ -70,19 +71,19 @@ fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<V
             let dots: Vec<f32> = corner_nodes.iter().map(|corner| {
 
                 // get distance of pixel from corner
-                let corner_vec = vec![
-                    (corner.0 * cell_size_x) as f32, 
-                    (corner.1 * cell_size_y) as f32
-                ];
-                let mut distance = pixel_vec.sub(&corner_vec);
-                *distance.x() /= cell_size_x as f32;
-                *distance.y() /= cell_size_y as f32;
+                let corner_vec = Vec2 {
+                    x: (corner.0 * cell_size_x) as f32, 
+                    y: (corner.1 * cell_size_y) as f32
+                };
+                let mut distance = &pixel_vec - &corner_vec;
+                distance.x /= cell_size_x as f32;
+                distance.y /= cell_size_y as f32;
 
                 // get random vec associated with corner
                 let corner_gradient_vec = &grid[corner.0][corner.1];
 
                 // compute the dot product and scale it to fit in 0..1
-                return distance.mul(corner_gradient_vec) * scale;
+                return distance.dot(&corner_gradient_vec) * scale;
             }).collect();
 
             let interpolation_1 = serp(dots[0], dots[1], x as f32 / cell_size_x as f32);
@@ -103,15 +104,15 @@ fn perlin_cell(mutex_image: Arc<Mutex<&mut Image<GrayscaleColor>>>, grid: &Vec<V
     }
 }
 
-fn generate_random_vector(_dimensions: usize) -> Vector {
-    let mut vec = vec![
-        rand::thread_rng().gen_range(-1.0, 1.0),
-        rand::thread_rng().gen_range(-1.0, 1.0),
-    ];
+fn generate_random_vector(_dimensions: usize) -> Vec2 {
+    let mut vec = Vec2 {
+        x: rand::thread_rng().gen_range(-1.0, 1.0),
+        y: rand::thread_rng().gen_range(-1.0, 1.0),
+    };
 
-    while vec.magnitude() > 1.0 {
-        vec[0] = rand::thread_rng().gen_range(-1.0, 1.0);
-        vec[1] = rand::thread_rng().gen_range(-1.0, 1.0);
+    while vec.len() > 1.0 {
+        vec.x = rand::thread_rng().gen_range(-1.0, 1.0);
+        vec.y = rand::thread_rng().gen_range(-1.0, 1.0);
     }
 
     vec.normalize();
